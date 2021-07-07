@@ -5,14 +5,14 @@ author: Alexander.Li<superpowerlee@gmail.com>
 homepage: https://github.com/ipconfiger/oss_flutter
 
 environment:
-  sdk: '>=2.0.0 <3.0.0'
+  sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
-  crypto: ^2.0.6
+  crypto: ^3.0.1
   intl: any
-  xml: ^4.3.0
+  xml: ^5.1.2
 
 
 dev_dependencies:
-  test: '>=0.12.30 <1.4.0'
-  http_client: ^1.4.2
+  test: ^1.17.9
+  http_client: ^1.5.1
