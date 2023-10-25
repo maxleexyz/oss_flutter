@@ -14,13 +14,13 @@ class OssException implements Exception {
 }
 
 class OSSResponse {
-  OSSResponse(this.resp_txt) {
+  OSSResponse({required this.resp_txt}) {
     print("resp:${this.resp_txt}");
     this.resp_root = XmlDocument.parse(this.resp_txt);
   }
   String resp_txt;
-  XmlDocument resp_root;
-  Map<String, String> response_dict;
+  late XmlDocument resp_root;
+  late Map<String, String> response_dict;
   void raise_exception() {
     final rootTagName = this.resp_root.rootElement.name;
     if ('$rootTagName' == "Error") {
@@ -39,7 +39,7 @@ class OSSResponse {
   }
 
   String getKey(String key) {
-    return response_dict.containsKey(key) ? response_dict[key] : '';
+    return response_dict[key] ?? '';
   }
 }
 
@@ -55,7 +55,7 @@ class HttpRequest {
   String method;
   Map param;
   Map headers;
-  List<int> _fileData;
+  late List<int> _fileData;
 
   set fileData(List<int> bytes) {
     this._fileData = bytes;
@@ -66,7 +66,7 @@ class HttpRequest {
   String get Url {
     var url_params = [];
     var url_base = this.url;
-    if ((this.param ?? {}).isNotEmpty) {
+    if ((this.param).isNotEmpty) {
       this.param.forEach((k, v) {
         url_params.add("${k}=${v}");
       });
@@ -79,9 +79,9 @@ class HttpRequest {
   }
 
   /// return string of curl command, you can test it in console
-  String asCurl({file_path: null}) {
+  String asCurl({file_path = null}) {
     var cmd_base = 'curl ';
-    if ((this.headers ?? {}).isNotEmpty) {
+    if ((this.headers).isNotEmpty) {
       this.headers.forEach((k, v) {
         cmd_base = "${cmd_base} -H \"${k}:${v}\"";
       });
@@ -111,22 +111,22 @@ class Client {
   /// @param stsRequestUrl type:String Url to get sts token
   /// @param endpointDomain type:String Domain of endpoint
   /// @param getToken type:GetToken function for get sts token
-  Client(String stsRequestUrl, String endpointDomain, GetToken getToken) {
-    this.stsRequestUrl = stsRequestUrl;
-    this.endpoint = endpointDomain;
-    this.tokenGetter = getToken;
-  }
-  String stsRequestUrl;
-  String endpoint;
-  GetToken tokenGetter;
+  Client(
+    this.stsRequestUrl,
+    this.endpoint,
+    this.tokenGetter,
+  ) {}
+  String? stsRequestUrl;
+  String? endpoint;
+  GetToken? tokenGetter;
 
   Client.static(String accessKey, String accessSecret, String region) {
     this._auth = Auth(accessKey, accessSecret, null);
     this.endpoint = "oss-${region}.aliyuncs.com";
   }
 
-  Auth _auth;
-  String _expire;
+  Auth? _auth;
+  String? _expire;
 
   bool checkExpire(String expire) {
     if (expire == null) {
@@ -144,10 +144,10 @@ class Client {
     if (this._auth != null) {
       return this;
     }
-    if (this.checkExpire(this._expire)) {
+    if (this.checkExpire(this._expire!)) {
       return this;
     } else {
-      final resp = await this.tokenGetter(this.stsRequestUrl);
+      final resp = await this.tokenGetter!(this.stsRequestUrl);
       final respMap = jsonDecode(resp);
       this._auth = Auth(respMap['AccessKeyId'], respMap['AccessKeySecret'],
           respMap['SecurityToken']);
@@ -157,7 +157,7 @@ class Client {
   }
 
   bool checkAuthed() {
-    if (this._auth != null && this.checkExpire(this._expire)) {
+    if (this._auth != null && this.checkExpire(this._expire!)) {
       return true;
     }
     return false;
@@ -165,7 +165,7 @@ class Client {
 
   /// List Buckets
   HttpRequest list_buckets(
-      {prefix: '', marker: '', max_keys: 100, params: null}) {
+      {prefix = '', marker = '', max_keys = 100, params = null}) {
     final listParam = {
       'prefix': prefix,
       'marker': marker,
@@ -181,7 +181,7 @@ class Client {
     }
     final url = "http://${this.endpoint}";
     HttpRequest req = new HttpRequest(url, 'GET', listParam, {});
-    this._auth.signRequest(req, '', '');
+    this._auth?.signRequest(req, '', '');
     return req;
   }
 
@@ -197,7 +197,7 @@ class Client {
     };
     final url = "https://${bucketName}.${this.endpoint}/${fileKey}";
     HttpRequest req = new HttpRequest(url, 'PUT', {}, headers);
-    this._auth.signRequest(req, bucketName, fileKey);
+    this._auth?.signRequest(req, bucketName, fileKey);
     req.fileData = fileData;
     return req;
   }
@@ -209,7 +209,7 @@ class Client {
   HttpRequest deleteObject(String bucketName, String fileKey) {
     final url = "https://${bucketName}.${this.endpoint}/${fileKey}";
     final req = HttpRequest(url, 'DELETE', {}, {});
-    this._auth.signRequest(req, bucketName, fileKey);
+    this._auth?.signRequest(req, bucketName, fileKey);
     return req;
   }
 
@@ -220,7 +220,7 @@ class Client {
     final url = "https://${bucketName}.${this.endpoint}/${fileKey}?uploads";
     final headers = {'content-type': "application/xml"};
     HttpRequest req = new HttpRequest(url, 'POST', {}, headers);
-    this._auth.signRequest(req, bucketName, fileKey);
+    this._auth?.signRequest(req, bucketName, fileKey);
     return req;
   }
 
@@ -230,7 +230,7 @@ class Client {
     final params = {"partNumber": '$partNumber', "uploadId": uploadId};
     HttpRequest req = new HttpRequest(url, 'PUT', params, {});
     req.fileData = data;
-    this._auth.signRequest(req, bucketName, fileKey);
+    this._auth?.signRequest(req, bucketName, fileKey);
     return req;
   }
 
@@ -255,21 +255,21 @@ class Client {
     final xml_request = builder.buildDocument().toXmlString();
     print("XML Request:$xml_request");
     req.fileData = utf8.encode(xml_request);
-    this._auth.signRequest(req, bucketName, fileKey);
+    this._auth?.signRequest(req, bucketName, fileKey);
     return req;
   }
 }
 
 class Auth {
-  Auth(String accessKey, String accessSecret, String secureToken) {
-    this.accessKey = accessKey;
-    this.accessSecret = accessSecret;
-    this.secureToken = secureToken;
-  }
+  Auth(
+    this.accessKey,
+    this.accessSecret,
+    this.secureToken,
+  ) {}
 
-  String accessKey;
-  String accessSecret;
-  String secureToken;
+  String? accessKey;
+  String? accessSecret;
+  String? secureToken;
 
   static const _subresource_key_set = [
     'response-content-type',
@@ -318,18 +318,18 @@ class Auth {
     'policy'
   ];
 
-  void signRequest(HttpRequest req, String bucket, String key) {
-    req.headers['date'] = httpDateNow();
+  void signRequest(HttpRequest? req, String bucket, String key) {
+    req?.headers['date'] = httpDateNow();
     if (this.secureToken != null) {
-      req.headers['x-oss-security-token'] = this.secureToken;
+      req?.headers['x-oss-security-token'] = this.secureToken;
     }
-    final signature = this.make_signature(req, bucket, key);
-    req.headers['authorization'] = "OSS ${this.accessKey}:${signature}";
+    final signature = this.make_signature(req!, bucket, key);
+    req?.headers['authorization'] = "OSS ${this.accessKey}:${signature}";
   }
 
   String make_signature(HttpRequest req, String bucket, String key) {
     final string_to_sign = this.get_string_to_sign(req, bucket, key);
-    return hmacSign(this.accessSecret, string_to_sign);
+    return hmacSign(this.accessSecret!, string_to_sign);
   }
 
   String get_string_to_sign(HttpRequest req, String bucket, String key) {

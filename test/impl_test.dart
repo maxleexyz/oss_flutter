@@ -46,7 +46,8 @@ void main() {
     });
 
     test('Client-checkExpire', () {
-      final client = Client('', '', (url) async {});
+      final client = Client('', '', null);
+      // final client = Client('', '', (url) async {});
       final yes = client.checkExpire('2019-06-23T00:53:26Z');
       print('rs:${yes}');
       expect(true, equals(yes));
@@ -117,7 +118,7 @@ void main() {
       expect(true, equals(true));
     });
     test('HttpRequest', () async {
-      final req = new HttpRequest('http://aaa.com', 'GET', null, null);
+      final req = new HttpRequest('http://aaa.com', 'GET', {}, {});
       print(req.asCurl());
     });
 
@@ -130,7 +131,8 @@ void main() {
           headers: console.Headers((req.headers ?? {}).cast<String, dynamic>()),
           body: req.fileData);
       final console.Response response = await http.send(request);
-      OSSResponse ossresp = OSSResponse(await response.readAsString());
+      OSSResponse ossresp =
+          OSSResponse(resp_txt: await response.readAsString());
       ossresp.raise_exception();
       final uploadId = ossresp.getKey('UploadId');
       print('uploadId: $uploadId');
@@ -150,8 +152,8 @@ void main() {
             body: upReq.fileData);
         final console.Response upResponse = await http.send(upRequest);
         final etag = upResponse.headers['ETag'];
-        print('etag:${etag.first}');
-        etags.add(etag.first);
+        print('etag:${etag?.first}');
+        etags.add(etag?.first ?? '');
       }
 
       final cplReq =
