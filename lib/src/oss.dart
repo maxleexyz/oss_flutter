@@ -51,10 +51,10 @@ class HttpRequest {
     this.param = param;
     this.headers = headers;
   }
-  String url;
-  String method;
-  Map param;
-  Map headers;
+  late String url;
+  late String method;
+  late Map param;
+  late Map headers;
   late List<int> _fileData;
 
   set fileData(List<int> bytes) {
